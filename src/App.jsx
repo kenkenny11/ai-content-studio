@@ -45,55 +45,84 @@ function App() {
   const [topic, setTopic] = useState("");
   const [format, setFormat] = useState("Facebook Post");
   const [contentType, setContentType] = useState("AI Tools");
+  const [audience, setAudience] = useState("US Audience");
   const [tone, setTone] = useState("Conversational");
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(null);
   const [saved, setSaved] = useState([]);
   const [copied, setCopied] = useState(false);
 
-  const generateDemo = () => {
+  const generateContent = async () => {
+    const selectedTopic =
+      topic.trim() || "5 AI tools that can save you time every week";
+
     if (!topic.trim()) {
-      setTopic("5 AI tools that can save you time every week");
+      setTopic(selectedTopic);
     }
 
     setLoading(true);
+    setGenerated(null);
 
-    setTimeout(() => {
-      const selectedTopic =
-        topic.trim() || "5 AI tools that can save you time every week";
-
-      setGenerated({
-        hook: `You're probably spending too much time on tasks that AI can handle.`,
-        post: `If you work online, study, create content or run a small business, there are simple AI tools that can remove repetitive work from your day.\n\nFor this post, focus on: ${selectedTopic}.\n\nThe best approach isn't to use AI for everything. Pick one repetitive task, test one tool and measure the time you save.\n\nStart small. Build a workflow that actually fits the way you work.`,
-        cta: "Which task would you automate first?",
-        image:
-          "Create a realistic modern US home-office scene with a laptop showing an AI productivity dashboard, smartphone beside the laptop, natural lighting, clean professional environment, no visible brand logos, vertical Facebook composition.",
-        reel: `HOOK: Stop doing repetitive work manually.\n\nBODY: There are AI tools that can handle research, writing, organization and other repetitive tasks in minutes.\n\nVALUE: Pick one task you repeat every week and find an AI tool that can reduce the manual work.\n\nCTA: Follow for practical AI and productivity tools.`,
-        carousel: [
-          "STOP WASTING HOURS ON REPETITIVE WORK",
-          "The problem: too many small tasks eat your day.",
-          "AI can help with research, writing and organization.",
-          "Pick one repetitive task and automate part of it.",
-          "Test the workflow for one week.",
-          "Keep what saves you time. Drop what doesn't.",
-          "Which task would you automate first?",
-        ],
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          topic: selectedTopic,
+          format,
+          contentType,
+          audience,
+          tone,
+        }),
       });
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Failed to generate content."
+        );
+      }
+
+      if (!data?.content) {
+        throw new Error("The AI returned no content.");
+      }
+
+      setGenerated(data.content);
+    } catch (error) {
+      console.error("Generation error:", error);
+
+      alert(
+        error?.message ||
+          "Something went wrong while generating your content."
+      );
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   };
 
   const copyPost = async () => {
     if (!generated) return;
 
-    const text = `${generated.hook}\n\n${generated.post}\n\n${generated.cta}`;
+    const text = [
+      generated.hook,
+      generated.post,
+      generated.cta,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
 
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 1800);
+    } catch (error) {
+      console.error("Copy failed:", error);
       setCopied(false);
     }
   };
@@ -138,7 +167,11 @@ function App() {
         />
       )}
 
-      <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
+      <aside
+        className={`sidebar ${
+          sidebarOpen ? "sidebar-open" : ""
+        }`}
+      >
         <div className="brand">
           <div className="brand-icon">
             <Sparkles size={19} />
@@ -152,6 +185,7 @@ function App() {
           <button
             className="close-sidebar"
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
           >
             <X size={20} />
           </button>
@@ -183,7 +217,9 @@ function App() {
           <div className="plan-card">
             <div className="plan-label">CONTENT ENGINE</div>
             <p>US audience mode</p>
-            <span>AI Tools · Tech · Productivity</span>
+            <span>
+              AI Tools · Tech · Productivity
+            </span>
           </div>
         </div>
       </aside>
@@ -213,24 +249,37 @@ function App() {
             <>
               <section className="hero">
                 <div>
-                  <p className="eyebrow">AI CONTENT ENGINE</p>
-                  <h1>Create content people want to save and share.</h1>
+                  <p className="eyebrow">
+                    AI CONTENT ENGINE
+                  </p>
+
+                  <h1>
+                    Create content people want to save
+                    and share.
+                  </h1>
+
                   <p className="hero-copy">
-                    Generate original Facebook posts, carousels, reels and
-                    stories for your US-focused technology page.
+                    Generate original Facebook posts,
+                    carousels, reels and stories for your
+                    US-focused technology page.
                   </p>
                 </div>
 
                 <div className="hero-actions">
                   <button
                     className="primary-button"
-                    onClick={() => setActivePage("Generate")}
+                    onClick={() =>
+                      setActivePage("Generate")
+                    }
                   >
                     <Sparkles size={18} />
                     Create Content
                   </button>
 
-                  <button className="secondary-button" onClick={generateIdeas}>
+                  <button
+                    className="secondary-button"
+                    onClick={generateIdeas}
+                  >
                     <Lightbulb size={18} />
                     Find Ideas
                   </button>
@@ -241,13 +290,17 @@ function App() {
                 <div className="stat-card">
                   <span>NICHE</span>
                   <strong>AI + Tech</strong>
-                  <small>Productivity focused</small>
+                  <small>
+                    Productivity focused
+                  </small>
                 </div>
 
                 <div className="stat-card">
                   <span>AUDIENCE</span>
                   <strong>United States</strong>
-                  <small>Professionals & creators</small>
+                  <small>
+                    Professionals & creators
+                  </small>
                 </div>
 
                 <div className="stat-card">
@@ -259,7 +312,9 @@ function App() {
                 <div className="stat-card">
                   <span>FORMATS</span>
                   <strong>4</strong>
-                  <small>Post · Reel · Story · Carousel</small>
+                  <small>
+                    Post · Reel · Story · Carousel
+                  </small>
                 </div>
               </section>
 
@@ -267,7 +322,9 @@ function App() {
                 <div className="panel">
                   <div className="panel-heading">
                     <div>
-                      <p className="eyebrow">QUICK CREATE</p>
+                      <p className="eyebrow">
+                        QUICK CREATE
+                      </p>
                       <h2>Start with an idea</h2>
                     </div>
                   </div>
@@ -291,24 +348,34 @@ function App() {
                 <div className="panel">
                   <div className="panel-heading">
                     <div>
-                      <p className="eyebrow">CONTENT MIX</p>
+                      <p className="eyebrow">
+                        CONTENT MIX
+                      </p>
                       <h2>What you can create</h2>
                     </div>
                   </div>
 
                   <div className="mix-list">
-                    {contentTypes.slice(0, 6).map((item, index) => (
-                      <div className="mix-row" key={item}>
-                        <span>{item}</span>
-                        <div className="mix-bar">
-                          <div
-                            style={{
-                              width: `${75 - index * 7}%`,
-                            }}
-                          />
+                    {contentTypes
+                      .slice(0, 6)
+                      .map((item, index) => (
+                        <div
+                          className="mix-row"
+                          key={item}
+                        >
+                          <span>{item}</span>
+
+                          <div className="mix-bar">
+                            <div
+                              style={{
+                                width: `${
+                                  75 - index * 7
+                                }%`,
+                              }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </section>
@@ -319,8 +386,13 @@ function App() {
             <section>
               <div className="section-header">
                 <div>
-                  <p className="eyebrow">CONTENT GENERATOR</p>
-                  <h1>Turn an idea into a content package.</h1>
+                  <p className="eyebrow">
+                    CONTENT GENERATOR
+                  </p>
+
+                  <h1>
+                    Turn an idea into a content package.
+                  </h1>
                 </div>
               </div>
 
@@ -330,7 +402,9 @@ function App() {
 
                   <textarea
                     value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
+                    onChange={(e) =>
+                      setTopic(e.target.value)
+                    }
                     placeholder="Example: 5 AI tools that save remote workers time..."
                     rows="5"
                   />
@@ -338,46 +412,71 @@ function App() {
                   <div className="form-grid">
                     <div>
                       <label>Format</label>
+
                       <select
                         value={format}
-                        onChange={(e) => setFormat(e.target.value)}
+                        onChange={(e) =>
+                          setFormat(e.target.value)
+                        }
                       >
                         {formats.map((item) => (
-                          <option key={item}>{item}</option>
+                          <option key={item}>
+                            {item}
+                          </option>
                         ))}
                       </select>
                     </div>
 
                     <div>
                       <label>Content type</label>
+
                       <select
                         value={contentType}
-                        onChange={(e) => setContentType(e.target.value)}
+                        onChange={(e) =>
+                          setContentType(e.target.value)
+                        }
                       >
                         {contentTypes.map((item) => (
-                          <option key={item}>{item}</option>
+                          <option key={item}>
+                            {item}
+                          </option>
                         ))}
                       </select>
                     </div>
 
                     <div>
                       <label>Audience</label>
-                      <select defaultValue="US Audience">
+
+                      <select
+                        value={audience}
+                        onChange={(e) =>
+                          setAudience(e.target.value)
+                        }
+                      >
                         <option>US Audience</option>
-                        <option>US Professionals</option>
+                        <option>
+                          US Professionals
+                        </option>
                         <option>US Creators</option>
                         <option>US Students</option>
-                        <option>US Small Business</option>
+                        <option>
+                          US Small Business
+                        </option>
                       </select>
                     </div>
 
                     <div>
                       <label>Tone</label>
+
                       <select
                         value={tone}
-                        onChange={(e) => setTone(e.target.value)}
+                        onChange={(e) =>
+                          setTone(e.target.value)
+                        }
                       >
-                        <option>Conversational</option>
+                        <option>
+                          Conversational
+                        </option>
                         <option>Professional</option>
                         <option>Educational</option>
                         <option>Bold</option>
@@ -388,27 +487,37 @@ function App() {
 
                   <div className="checks">
                     <span>
-                      <Check size={15} /> Original angle
+                      <Check size={15} />
+                      Original angle
                     </span>
+
                     <span>
-                      <Check size={15} /> US examples
+                      <Check size={15} />
+                      US examples
                     </span>
+
                     <span>
-                      <Check size={15} /> Strong CTA
+                      <Check size={15} />
+                      Strong CTA
                     </span>
+
                     <span>
-                      <Check size={15} /> Image prompt
+                      <Check size={15} />
+                      Image prompt
                     </span>
                   </div>
 
                   <button
                     className="primary-button full-button"
-                    onClick={generateDemo}
+                    onClick={generateContent}
                     disabled={loading}
                   >
                     {loading ? (
                       <>
-                        <RefreshCw className="spin" size={18} />
+                        <RefreshCw
+                          className="spin"
+                          size={18}
+                        />
                         Creating...
                       </>
                     ) : (
@@ -421,15 +530,32 @@ function App() {
                 </div>
 
                 <div className="panel tips-panel">
-                  <p className="eyebrow">EDITORIAL RULES</p>
-                  <h2>Built for original content</h2>
+                  <p className="eyebrow">
+                    EDITORIAL RULES
+                  </p>
+
+                  <h2>
+                    Built for original content
+                  </h2>
 
                   <ul>
-                    <li>Useful information before promotion.</li>
-                    <li>No invented statistics or fake claims.</li>
-                    <li>No copied creator posts.</li>
-                    <li>Natural US audience language.</li>
-                    <li>Clear reason to comment or save.</li>
+                    <li>
+                      Useful information before
+                      promotion.
+                    </li>
+                    <li>
+                      No invented statistics or fake
+                      claims.
+                    </li>
+                    <li>
+                      No copied creator posts.
+                    </li>
+                    <li>
+                      Natural US audience language.
+                    </li>
+                    <li>
+                      Clear reason to comment or save.
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -438,22 +564,45 @@ function App() {
                 <div className="results">
                   <div className="result-header">
                     <div>
-                      <p className="eyebrow">GENERATED PACKAGE</p>
-                      <h2>{topic || "AI productivity content"}</h2>
+                      <p className="eyebrow">
+                        GENERATED PACKAGE
+                      </p>
+
+                      <h2>
+                        {topic ||
+                          "AI productivity content"}
+                      </h2>
                     </div>
 
                     <div className="result-actions">
-                      <button className="secondary-button" onClick={saveContent}>
+                      <button
+                        className="secondary-button"
+                        onClick={saveContent}
+                      >
                         <Save size={17} />
                         Save
                       </button>
 
-                      <button className="secondary-button" onClick={copyPost}>
-                        {copied ? <Check size={17} /> : <Copy size={17} />}
-                        {copied ? "Copied" : "Copy Post"}
+                      <button
+                        className="secondary-button"
+                        onClick={copyPost}
+                      >
+                        {copied ? (
+                          <Check size={17} />
+                        ) : (
+                          <Copy size={17} />
+                        )}
+
+                        {copied
+                          ? "Copied"
+                          : "Copy Post"}
                       </button>
 
-                      <button className="secondary-button" onClick={generateDemo}>
+                      <button
+                        className="secondary-button"
+                        onClick={generateContent}
+                        disabled={loading}
+                      >
                         <RefreshCw size={17} />
                         Regenerate
                       </button>
@@ -462,36 +611,67 @@ function App() {
 
                   <div className="content-grid">
                     <article className="content-card hook-card">
-                      <span className="content-label">HOOK</span>
+                      <span className="content-label">
+                        HOOK
+                      </span>
+
                       <h3>{generated.hook}</h3>
                     </article>
 
                     <article className="content-card">
-                      <span className="content-label">FACEBOOK POST</span>
-                      <p className="preformatted">{generated.post}</p>
+                      <span className="content-label">
+                        FACEBOOK POST
+                      </span>
+
+                      <p className="preformatted">
+                        {generated.post}
+                      </p>
                     </article>
 
                     <article className="content-card">
-                      <span className="content-label">CTA</span>
+                      <span className="content-label">
+                        CTA
+                      </span>
+
                       <h3>{generated.cta}</h3>
                     </article>
 
                     <article className="content-card">
-                      <span className="content-label">IMAGE PROMPT</span>
-                      <p>{generated.image}</p>
+                      <span className="content-label">
+                        IMAGE PROMPT
+                      </span>
+
+                      <p>
+                        {generated.imagePrompt}
+                      </p>
                     </article>
 
                     <article className="content-card">
-                      <span className="content-label">REEL SCRIPT</span>
-                      <p className="preformatted">{generated.reel}</p>
+                      <span className="content-label">
+                        REEL SCRIPT
+                      </span>
+
+                      <p className="preformatted">
+                        {generated.reelScript}
+                      </p>
                     </article>
 
                     <article className="content-card">
-                      <span className="content-label">CAROUSEL</span>
+                      <span className="content-label">
+                        CAROUSEL
+                      </span>
 
                       <div className="carousel-slides">
-                        {generated.carousel.map((slide, index) => (
-                          <div className="slide" key={slide}>
+                        {(Array.isArray(
+                          generated.carousel
+                        )
+                          ? generated.carousel
+                          : []
+                        ).map((slide, index) => (
+                          <div
+                            className="slide"
+                            key={`${slide}-${index}`}
+                          >
                             <span>{index + 1}</span>
                             <p>{slide}</p>
                           </div>
@@ -507,73 +687,4 @@ function App() {
           {activePage === "Ideas" && (
             <section>
               <div className="section-header">
-                <div>
-                  <p className="eyebrow">IDEA GENERATOR</p>
-                  <h1>Find your next content ideas.</h1>
-                  <p>
-                    Generate topics around AI, technology and digital
-                    productivity.
-                  </p>
-                </div>
-
-                <button
-                  className="primary-button"
-                  onClick={() => setActivePage("Generate")}
-                >
-                  <Sparkles size={18} />
-                  Create From Idea
-                </button>
-              </div>
-
-              <div className="idea-grid">
-                {[
-                  "7 AI tools that can save a small business hours every week",
-                  "AI tools for people working from home",
-                  "5 free tools every college student should know",
-                  "The easiest repetitive task to automate this week",
-                  "AI tools for creators who make Facebook content",
-                  "5 digital habits that waste your time",
-                  "AI tools for freelancers",
-                  "What AI can automate for a small business",
-                  "Useful browser extensions for productivity",
-                  "AI mistakes beginners should avoid",
-                ].map((idea, index) => (
-                  <button
-                    className="idea-card"
-                    key={idea}
-                    onClick={() => {
-                      setTopic(idea);
-                      setActivePage("Generate");
-                    }}
-                  >
-                    <span>0{index + 1}</span>
-                    <strong>{idea}</strong>
-                    <small>Use this idea →</small>
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {activePage === "Content Library" && (
-            <section>
-              <div className="section-header">
-                <div>
-                  <p className="eyebrow">YOUR CONTENT</p>
-                  <h1>Content Library</h1>
-                  <p>Saved content from this browser.</p>
-                </div>
-              </div>
-
-              {saved.length === 0 ? (
-                <div className="empty-state">
-                  <Library size={35} />
-                  <h2>No saved content yet</h2>
-                  <p>Generate something and tap Save.</p>
-                  <button
-                    className="primary-button"
-                    onClick={() => setActivePage("Generate")}
-                  >
-                    Create Content
-                  </button>
-             </
+             
